@@ -1,0 +1,141 @@
+import tkinter as tk
+
+cookie_clicker_basic_data_path = r"cookie_clicker_basic_player_data.txt"
+cookie_clicker_shop_items_data_path = r"cookie_clicker_shop_items_data.txt"
+
+
+def get_basic_cookies_data():
+    saved_data_numbers = []
+
+    try:
+        game_data_file_creation_check = open("cookie_clicker_basic_player_data.txt", 'x')
+        with open(cookie_clicker_basic_data_path, 'w') as w_file:
+            w_file.write("cookies = 0\nCpC = 1\nCpS = 0")
+        game_data_file_creation_check.close()
+        saved_data_numbers = [0, 1, 0]
+    except FileExistsError:
+        with open(cookie_clicker_basic_data_path, 'r') as r_file:
+            for i in range(3):
+                data_line = r_file.readline()
+                data_num = ''
+                for j in range(len(data_line) - 1, -1, -1):
+                    if data_line[j] != ' ':
+                        data_num += data_line[j]
+                    else:
+                        break
+
+                data_num = data_num[-1::-1]
+                data_num = int(data_num)
+                saved_data_numbers.append(data_num)
+
+    return saved_data_numbers
+
+
+def get_shop_items_data():
+    shop_items_owned_nums = []
+    try:
+        shop_items_file_check = open("cookie_clicker_shop_items_data.txt", 'x')
+        with open(cookie_clicker_shop_items_data_path, 'w') as w_file:
+            w_file.write("0\n10")
+        shop_items_file_check.close()
+        shop_items_owned_nums = [0, 10]
+    except FileExistsError:
+        with open(cookie_clicker_shop_items_data_path, 'r') as r_file:
+            for i in range(2):
+                data_line = r_file.readline()
+                data_num = ''
+                for j in range(len(data_line) - 1, -1, -1):
+                    if data_line[j] != ' ':
+                        data_num += data_line[j]
+                    else:
+                        break
+
+                data_num = data_num[-1::-1]
+                data_num = int(data_num)
+                shop_items_owned_nums.append(data_num)
+
+    return shop_items_owned_nums
+
+
+class CircularButton(tk.Canvas):
+    def __init__(self, master, radius, color, command=None):
+        super().__init__(master, width=2 * radius, height=2 * radius, highlightthickness=0)
+        self.radius = radius
+        self.color = color
+        self.command = command
+
+        self.bind("<Button-1>", self.on_button_click)
+        self.create_oval(0, 0, 2 * radius, 2 * radius, fill=color)
+
+    def on_button_click(self, event):
+        if self.command:
+            self.command()
+
+
+def button_clicked():
+    global cookies, CpC, cookies_amount_line
+    cookies += CpC
+    cookies_amount_line.config(text=cookies)
+
+
+def give_auto_cookies():
+    global cookies, CpS, cookies_amount_line
+    cookies += CpS
+    cookies_amount_line.config(text=cookies)
+    root.after(1000, give_auto_cookies)
+
+
+def increase_cps(amount_to_add, item, button):
+    global CpS, cookies, shop_items_amount
+    if cookies >= shop_items_amount[item+1]:
+        cookies -= shop_items_amount[item+1]
+        CpS += amount_to_add
+        shop_items_amount[item] += 1
+        shop_items_amount[item + 1] *= 2
+        button.config(text=f"mouses amount = {shop_items_amount[item]} cost = {shop_items_amount[item+1]}")
+    print(shop_items_amount[item+1])
+
+
+root = tk.Tk()
+
+root.geometry("1000x500")
+
+cookies, CpC, CpS = get_basic_cookies_data()
+shop_items_amount = [v for v in get_shop_items_data()]
+
+cookies_amount_line = tk.Label(text=cookies, font=("Helvetica", 20))
+cookies_amount_line.grid(row=0)
+
+cookie_button = CircularButton(root, radius=200, color="#B06523", command=button_clicked)
+cookie_button.grid(row=1)
+
+void_line = tk.Label(text="", width=20)
+void_line.grid(row=0, column=1)
+
+shop_line = tk.Label(text="shop", font=("Helvetica", 15))
+shop_line.grid(row=0, column=2)
+
+void_line2 = tk.Label(text="", width=20)
+void_line2.grid(row=0, column=3)
+
+upg_line = tk.Label(text="upgrades", font=("Helvetica", 15))
+upg_line.grid(row=0, column=4)
+
+shop_item_mouses_button = tk.Button(
+    text=f"mouses amount = {shop_items_amount[0]} cost = {shop_items_amount[1]}",
+    command=lambda amount=1, cost=shop_items_amount[1]: increase_cps(amount, 0, shop_item_mouses_button))
+shop_item_mouses_button.grid(row=1, column=2)
+
+root.after(1000, give_auto_cookies)
+
+root.mainloop()
+
+with open(cookie_clicker_basic_data_path, 'w') as file:
+    file.write(f"cookies = {cookies}\nCpC = {CpC}\nCpS = {CpS}")
+
+with open(cookie_clicker_shop_items_data_path, 'w') as file:
+    file.write("")
+
+with open(cookie_clicker_shop_items_data_path, 'a') as file:
+    for v in shop_items_amount:
+        file.write(f"{v}\n")
